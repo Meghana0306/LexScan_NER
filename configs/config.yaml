@@ -1,0 +1,246 @@
+# ══════════════════════════════════════════════════════════
+#  Multi-Domain NER — Master Configuration File
+#  All hyperparameters, paths, and settings live here.
+#  Never hardcode values in code — always read from here.
+# ══════════════════════════════════════════════════════════
+
+project:
+  name: "multi_domain_ner"
+  version: "1.0.0"
+  description: "NER for Legal and Medical Documents"
+  seed: 42
+
+# ─────────────────────────────────────────────
+# PATHS
+# ─────────────────────────────────────────────
+paths:
+  data_dir: "data"
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  splits_dir: "data/splits"
+  annotations_dir: "data/annotations"
+  models_dir: "models"
+  logs_dir: "logs"
+  outputs_dir: "outputs"
+  mlruns_dir: "mlruns"
+
+# ─────────────────────────────────────────────
+# DATA
+# ─────────────────────────────────────────────
+data:
+  medical:
+    raw_path: "data/raw/medical"
+    processed_path: "data/processed/medical"
+    dataset_name: "i2b2"          # i2b2 / MIMIC-III / BC5CDR
+    max_seq_length: 512
+    label_scheme: "IOB2"          # IOB2 or BIOES
+
+  legal:
+    raw_path: "data/raw/legal"
+    processed_path: "data/processed/legal"
+    dataset_name: "legal_ner"     # LegalNER / EUR-Lex
+    max_seq_length: 512
+    label_scheme: "IOB2"
+
+  splits:
+    train_ratio: 0.80
+    val_ratio: 0.10
+    test_ratio: 0.10
+
+# ─────────────────────────────────────────────
+# ENTITY LABELS
+# ─────────────────────────────────────────────
+labels:
+  medical:
+    - "O"
+    - "B-DISEASE"
+    - "I-DISEASE"
+    - "B-DRUG"
+    - "I-DRUG"
+    - "B-DOSAGE"
+    - "I-DOSAGE"
+    - "B-SYMPTOM"
+    - "I-SYMPTOM"
+    - "B-ANATOMY"
+    - "I-ANATOMY"
+    - "B-PROCEDURE"
+    - "I-PROCEDURE"
+    - "B-LAB_VALUE"
+    - "I-LAB_VALUE"
+    - "B-GENE_PROTEIN"
+    - "I-GENE_PROTEIN"
+    - "B-TEMPORAL"
+    - "I-TEMPORAL"
+    - "B-PATIENT_ID"
+    - "I-PATIENT_ID"
+
+  legal:
+    - "O"
+    - "B-PARTY"
+    - "I-PARTY"
+    - "B-JUDGE"
+    - "I-JUDGE"
+    - "B-COURT"
+    - "I-COURT"
+    - "B-STATUTE"
+    - "I-STATUTE"
+    - "B-CASE_NUM"
+    - "I-CASE_NUM"
+    - "B-JURISDICTION"
+    - "I-JURISDICTION"
+    - "B-DATE"
+    - "I-DATE"
+    - "B-PENALTY"
+    - "I-PENALTY"
+    - "B-LEGAL_ROLE"
+    - "I-LEGAL_ROLE"
+    - "B-OBLIGATION"
+    - "I-OBLIGATION"
+
+# ─────────────────────────────────────────────
+# MODELS
+# ─────────────────────────────────────────────
+models:
+  biobert:
+    pretrained_name: "dmis-lab/biobert-v1.1"
+    model_dir: "models/biobert"
+    domain: "medical"
+    hidden_size: 768
+    num_attention_heads: 12
+    num_hidden_layers: 12
+    dropout: 0.1
+
+  legalbert:
+    pretrained_name: "nlpaueb/legal-bert-base-uncased"
+    model_dir: "models/legalbert"
+    domain: "legal"
+    hidden_size: 768
+    num_attention_heads: 12
+    num_hidden_layers: 12
+    dropout: 0.1
+
+  spanbert:
+    pretrained_name: "SpanBERT/spanbert-base-cased"
+    model_dir: "models/spanbert"
+    domain: "both"
+    max_span_length: 10
+    dropout: 0.1
+
+  bilstm_crf:
+    model_dir: "models/bilstm_crf"
+    embedding_dim: 300
+    hidden_dim: 256
+    num_layers: 2
+    dropout: 0.3
+    use_char_embeddings: true
+    char_embedding_dim: 50
+    char_hidden_dim: 50
+
+  ensemble:
+    model_dir: "models/ensemble"
+    strategy: "weighted_vote"     # weighted_vote / majority_vote / stacking
+    weights:
+      biobert: 0.40
+      legalbert: 0.40
+      bilstm_crf: 0.20
+
+# ─────────────────────────────────────────────
+# TRAINING
+# ─────────────────────────────────────────────
+training:
+  # Common settings
+  output_dir: "outputs"
+  num_epochs: 10
+  batch_size: 16
+  eval_batch_size: 32
+  gradient_accumulation_steps: 2
+  max_grad_norm: 1.0
+  early_stopping_patience: 3
+
+  # Optimizer
+  optimizer: "adamw"
+  learning_rate: 2.0e-5
+  weight_decay: 0.01
+  adam_epsilon: 1.0e-8
+
+  # Scheduler
+  scheduler: "linear_warmup"
+  warmup_ratio: 0.1             # 10% of total steps for warmup
+
+  # Loss
+  loss_function: "focal"        # focal / cross_entropy
+  focal_gamma: 2.0
+  focal_alpha: 0.25
+
+  # Checkpointing
+  save_best_only: true
+  save_metric: "f1"             # metric to monitor for best model
+  checkpoint_dir: "outputs/checkpoints"
+
+  # Mixed precision
+  fp16: true                    # set false if no GPU
+  fp16_opt_level: "O1"
+
+# ─────────────────────────────────────────────
+# EVALUATION
+# ─────────────────────────────────────────────
+evaluation:
+  metrics:
+    - "f1"
+    - "precision"
+    - "recall"
+    - "accuracy"
+  average: "weighted"           # micro / macro / weighted
+  report_per_class: true
+  confidence_threshold: 0.75
+
+# ─────────────────────────────────────────────
+# MLFLOW
+# ─────────────────────────────────────────────
+mlflow:
+  tracking_uri: "mlruns"
+  experiment_name: "ner_experiments"
+  run_tags:
+    project: "multi_domain_ner"
+    team: "nlp"
+
+# ─────────────────────────────────────────────
+# API
+# ─────────────────────────────────────────────
+api:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 4
+  reload: false                 # true only in development
+  max_batch_size: 32
+  request_timeout: 30           # seconds
+  confidence_threshold: 0.75
+  allowed_domains:
+    - "medical"
+    - "legal"
+    - "auto"                    # auto-detect domain
+
+# ─────────────────────────────────────────────
+# DATABASE
+# ─────────────────────────────────────────────
+database:
+  postgres:
+    host: "localhost"
+    port: 5432
+    name: "ner_db"
+    user: "ner_user"
+    password: ""                # load from .env file
+  elasticsearch:
+    host: "localhost"
+    port: 9200
+    index_name: "ner_documents"
+
+# ─────────────────────────────────────────────
+# LOGGING
+# ─────────────────────────────────────────────
+logging:
+  level: "INFO"                 # DEBUG / INFO / WARNING / ERROR
+  log_dir: "logs"
+  log_file: "logs/ner_project.log"
+  rotation: "10 MB"
+  retention: "1 week"

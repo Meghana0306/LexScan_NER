@@ -1,0 +1,68 @@
+# ── Python ──
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Virtual Environments ──
+venv/
+env/
+.venv/
+ENV/
+
+# ── Secrets / Config ──
+.env
+*.key
+*.pem
+
+# ── Data (versioned by DVC, not Git) ──
+data/raw/
+data/processed/
+data/splits/
+data/annotations/
+*.csv
+*.json
+*.parquet
+*.pkl
+*.pickle
+
+# ── Model Weights (large files — use MLflow/DVC) ──
+models/biobert/*.bin
+models/biobert/*.pt
+models/legalbert/*.bin
+models/legalbert/*.pt
+models/bilstm_crf/*.pt
+models/ensemble/*.pt
+*.safetensors
+
+# ── MLflow ──
+mlruns/
+
+# ── Logs ──
+logs/
+*.log
+
+# ── Outputs ──
+outputs/checkpoints/
+
+# ── Jupyter ──
+.ipynb_checkpoints/
+*.ipynb
+
+# ── IDE ──
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# ── Testing ──
+.pytest_cache/
+.coverage
+htmlcov/

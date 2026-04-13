@@ -1,0 +1,9 @@
+# DVC ignore file — patterns DVC should not track
+.git
+.github
+__pycache__
+*.py[cod]
+venv/
+.env
+logs/
+mlruns/

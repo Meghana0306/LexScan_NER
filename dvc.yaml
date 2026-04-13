@@ -1,0 +1,91 @@
+# ============================================================
+# DVC Pipeline — Multi-Domain NER
+# Run: dvc repro   (to run the full pipeline)
+# Run: dvc dag     (to visualise the pipeline graph)
+# ============================================================
+
+stages:
+
+  # Stage 1: Download / prepare raw data
+  prepare_data:
+    cmd: python scripts/prepare_data.py
+    deps:
+      - scripts/prepare_data.py
+      - configs/config.yaml
+    outs:
+      - data/raw/medical
+      - data/raw/legal
+    params:
+      - configs/config.yaml:
+          - data.datasets
+
+  # Stage 2: Preprocess — tokenize, tag, create splits
+  preprocess:
+    cmd: python scripts/preprocess.py
+    deps:
+      - scripts/preprocess.py
+      - configs/config.yaml
+      - data/raw/medical
+      - data/raw/legal
+    outs:
+      - data/processed/medical
+      - data/processed/legal
+      - data/splits
+    params:
+      - configs/config.yaml:
+          - data.tagging_scheme
+          - data.train_ratio
+          - data.val_ratio
+          - data.test_ratio
+          - data.max_seq_length
+
+  # Stage 3: Train medical NER model
+  train_medical:
+    cmd: python scripts/train.py --domain medical
+    deps:
+      - scripts/train.py
+      - src/models/
+      - src/training/
+      - configs/config.yaml
+      - data/splits
+    outs:
+      - outputs/models/biobert_medical_ner
+    params:
+      - configs/config.yaml:
+          - models.medical_ner
+          - training
+
+  # Stage 4: Train legal NER model
+  train_legal:
+    cmd: python scripts/train.py --domain legal
+    deps:
+      - scripts/train.py
+      - src/models/
+      - src/training/
+      - configs/config.yaml
+      - data/splits
+    outs:
+      - outputs/models/legalbert_legal_ner
+    params:
+      - configs/config.yaml:
+          - models.legal_ner
+          - training
+
+  # Stage 5: Evaluate both models
+  evaluate:
+    cmd: python scripts/evaluate.py
+    deps:
+      - scripts/evaluate.py
+      - src/evaluation/
+      - configs/config.yaml
+      - outputs/models/biobert_medical_ner
+      - outputs/models/legalbert_legal_ner
+      - data/splits
+    outs:
+      - outputs/evaluation
+    metrics:
+      - outputs/evaluation/metrics.json:
+          cache: false
+    params:
+      - configs/config.yaml:
+          - evaluation
