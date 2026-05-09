@@ -144,3 +144,9 @@ docker-compose up --build
 - **Model registry:** MLflow Model Registry
 - **Monitoring:** Prometheus + Grafana
 - **CI/CD:** GitHub Actions
+
+
+
+claude API KEY 
+
+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

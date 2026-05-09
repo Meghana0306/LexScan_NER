@@ -1,0 +1,57 @@
+# ══════════════════════════════════════════════════════════════
+#  docker-compose.yml — Run everything with one command
+#  Usage: docker-compose up
+# ══════════════════════════════════════════════════════════════
+
+version: '3.8'
+
+services:
+
+  # ── FastAPI Backend ──────────────────────────────────────────
+  api:
+    build: .
+    container_name: ner_api
+    command: python run_api.py
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/app/models          # your trained models
+      - ./data:/app/data              # your data
+      - ./logs:/app/logs              # logs
+    env_file:
+      - .env
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ── Gradio UI Frontend ───────────────────────────────────────
+  ui:
+    build: .
+    container_name: ner_ui
+    command: python app.py
+    ports:
+      - "7860:7860"
+    volumes:
+      - ./models:/app/models
+      - ./data:/app/data
+      - ./logs:/app/logs
+    env_file:
+      - .env
+    environment:
+      - API_URL=http://api:8000       # connects to api service
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  models:
+  data:
+  logs:
