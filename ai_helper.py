@@ -5,7 +5,7 @@
 # ══════════════════════════════════════════════════════
 
 import os
-import httpx
+import httpx 
 from dotenv import load_dotenv
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"), override=True)
@@ -37,7 +37,8 @@ def ask_ai(messages: list, system_prompt: str) -> str:
                 "Content-Type": "application/json"
             },
             json={"model": MODEL, "messages": groq_messages, "max_tokens": 1000},
-            timeout=30
+            timeout=30,
+            verify=False  # Bypass SSL verification for corporate/proxy networks
         )
         data = resp.json()
         if "choices" in data:

@@ -1,0 +1,16 @@
+# LexScan optional production extras
+# Install only when enabling matching features:
+#   pip install -r requirements-prod.txt
+# Core behavior does not require these packages.
+
+# ENABLE_CACHING=true
+redis>=5.0.0,<6.0.0
+
+# ENABLE_METRICS=true
+prometheus-client>=0.20.0,<1.0.0
+
+# ENABLE_LOG_SHIPPING=true
+httpx>=0.27.0,<1.0.0
+
+# Optional load testing
+locust>=2.29.0,<3.0.0

@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/style.css?v=20260512c">
 </head>
 <body>
     <div class="app-shell">
@@ -19,6 +19,8 @@
 
             <nav class="main-nav" aria-label="Primary">
                 <a class="active" href="#" data-tab-target="tab-document">Document Analysis</a>
+                <a href="#" data-tab-target="tab-smart">Smart Workspace</a>
+                <a href="#" data-tab-target="tab-compare">Compare Docs</a>
                 <a href="#" data-tab-target="tab-assistant">AI Assistant</a>
                 <a href="#" data-tab-target="tab-batch">Batch Analysis</a>
                 <a href="#" data-tab-target="tab-multilang">Multi-Language</a>
@@ -174,6 +176,183 @@
                         </div>
                     </article>
                 </section>
+                </section>
+            </section>
+
+            <section class="tab-panel" id="tab-smart">
+                <section class="workspace smart-workspace">
+                    <section class="panel left-panel">
+                        <div class="panel-header">
+                            <h2>Smart Document Workspace</h2>
+                            <p>A separate ML workspace for subtype detection, plain-language explanation, red flags, timelines, search, grounded Q&amp;A, and document comparison.</p>
+                        </div>
+
+                        <div class="selectors">
+                            <div class="field-group">
+                                <label for="workspaceTitle">Document Title</label>
+                                <input id="workspaceTitle" type="text" placeholder="e.g. Cardiology follow-up note">
+                            </div>
+                            <div class="field-group">
+                                <label for="workspaceCollection">Collection</label>
+                                <input id="workspaceCollection" type="text" placeholder="e.g. Medical Records">
+                            </div>
+                        </div>
+
+                        <div class="selectors">
+                            <div class="field-group">
+                                <label for="workspaceDomain">Domain</label>
+                                <select id="workspaceDomain">
+                                    <option value="auto">Auto-detect</option>
+                                    <option value="legal">Legal</option>
+                                    <option value="medical">Medical</option>
+                                    <option value="general">General</option>
+                                </select>
+                            </div>
+                            <div class="field-group">
+                                <label for="workspaceSaveMode">Storage</label>
+                                <select id="workspaceSaveMode">
+                                    <option value="save">Analyze and save</option>
+                                    <option value="temp">Analyze only</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="field-group">
+                            <label for="workspaceText">Workspace Document Text</label>
+                            <textarea id="workspaceText" placeholder="Paste any real-world document here: report, agreement, order, invoice, insurance paper, discharge summary..."></textarea>
+                        </div>
+
+                        <div class="button-row">
+                            <button id="workspaceAnalyzeBtn" class="btn btn-primary" type="button">Analyze In Smart Workspace</button>
+                            <button id="workspaceUseCurrentBtn" class="btn btn-secondary" type="button">Use Current Document Text</button>
+                        </div>
+
+                        <article class="result-card compact">
+                            <h3>Workspace Status</h3>
+                            <div id="workspaceStatus" class="output-line muted">No smart-workspace analysis yet.</div>
+                        </article>
+
+                        <article class="result-card">
+                            <h3>Grounded Q&amp;A</h3>
+                            <div class="field-group">
+                                <label for="workspaceQuestion">Ask about this document</label>
+                                <textarea id="workspaceQuestion" placeholder="What is the main risk? Which dates matter? What should I do next?"></textarea>
+                            </div>
+                            <button id="workspaceQuestionBtn" class="btn btn-secondary" type="button">Ask Grounded Question</button>
+                            <div id="workspaceAnswer" class="output-block muted">Answers with document-grounded evidence appear here.</div>
+                        </article>
+
+                        <article class="result-card">
+                            <h3>Search Saved Workspace</h3>
+                            <div class="search-row">
+                                <input id="workspaceSearchInput" type="text" placeholder="Search by entity, date, medicine, clause, disease, court...">
+                                <button id="workspaceSearchBtn" class="btn btn-secondary" type="button">Search</button>
+                            </div>
+                            <div id="workspaceSearchResults" class="stack-list muted">Search results will appear here.</div>
+                        </article>
+                    </section>
+
+                    <section class="panel right-panel" aria-live="polite">
+                        <div class="panel-header">
+                            <h2>Smart Results</h2>
+                            <p>ML product features layered on top of the original extraction engine.</p>
+                        </div>
+
+                        <article class="result-card compact">
+                            <h3>Subtype &amp; Snapshot</h3>
+                            <div id="workspaceSubtype" class="chip-row">
+                                <span class="chip">Subtype: Pending</span>
+                                <span class="chip">Entities: 0</span>
+                                <span class="chip">Saved: No</span>
+                            </div>
+                        </article>
+
+                        <article class="result-card">
+                            <h3>Plain-Language Explanation</h3>
+                            <div id="workspaceSummary" class="output-block muted">A simpler explanation will appear here.</div>
+                        </article>
+
+                        <div class="smart-grid">
+                            <article class="result-card">
+                                <h3>Red Flags</h3>
+                                <div id="workspaceFlags" class="stack-list muted">Risk clues appear here.</div>
+                            </article>
+                            <article class="result-card">
+                                <h3>Action Items &amp; Reminders</h3>
+                                <div id="workspaceActions" class="stack-list muted">Action items and reminders appear here.</div>
+                            </article>
+                        </div>
+
+                        <div class="smart-grid">
+                            <article class="result-card">
+                                <h3>Timeline</h3>
+                                <div id="workspaceTimeline" class="stack-list muted">Dates and events appear here.</div>
+                            </article>
+                            <article class="result-card">
+                                <h3>Relations</h3>
+                                <div id="workspaceRelations" class="stack-list muted">Entity relationships appear here.</div>
+                            </article>
+                        </div>
+
+                        <article class="result-card">
+                            <h3>Normalized Entity Snapshot</h3>
+                            <div id="workspaceEntities" class="output-block muted">Normalized entities appear here.</div>
+                        </article>
+
+                        <article class="result-card">
+                            <h3>Recent Saved Documents</h3>
+                            <div id="workspaceRecentDocs" class="stack-list muted">Saved workspace documents appear here.</div>
+                        </article>
+                    </section>
+                </section>
+            </section>
+
+            <section class="tab-panel" id="tab-compare">
+                <section class="panel single-panel">
+                    <div class="panel-header">
+                        <h2>Compare Documents</h2>
+                        <p>Compare two contracts, reports, orders, or versions side by side without changing the main extraction tab.</p>
+                    </div>
+                    <div class="selectors">
+                        <div class="field-group">
+                            <label for="compareTabDomainA">Document A Domain</label>
+                            <select id="compareTabDomainA">
+                                <option value="auto">Auto-detect</option>
+                                <option value="legal">Legal</option>
+                                <option value="medical">Medical</option>
+                                <option value="general">General</option>
+                            </select>
+                        </div>
+                        <div class="field-group">
+                            <label for="compareTabDomainB">Document B Domain</label>
+                            <select id="compareTabDomainB">
+                                <option value="auto">Auto-detect</option>
+                                <option value="legal">Legal</option>
+                                <option value="medical">Medical</option>
+                                <option value="general">General</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="field-group">
+                        <label for="compareTabTextA">Document A</label>
+                        <textarea id="compareTabTextA" placeholder="Paste the original or first document..."></textarea>
+                    </div>
+                    <div class="field-group">
+                        <label for="compareTabTextB">Document B</label>
+                        <textarea id="compareTabTextB" placeholder="Paste the revised, updated, or second document..."></textarea>
+                    </div>
+                    <div class="button-row">
+                        <button id="compareTabRunBtn" class="btn btn-primary" type="button">Compare Documents</button>
+                        <button id="compareTabUseWorkspaceBtn" class="btn btn-secondary" type="button">Use Smart Workspace Text</button>
+                    </div>
+                    <article class="result-card compact">
+                        <h3>Compare Status</h3>
+                        <div id="compareTabStatus" class="output-line muted">No comparison run yet.</div>
+                    </article>
+                    <article class="result-card">
+                        <h3>Comparison Results</h3>
+                        <div id="compareTabOutput" class="output-block muted">Comparison details appear here.</div>
+                    </article>
                 </section>
             </section>
 
@@ -371,6 +550,6 @@
         </footer>
     </div>
 
-    <script src="/static/js/script.js"></script>
+    <script src="/static/js/script.js?v=20260512c"></script>
 </body>
 </html>

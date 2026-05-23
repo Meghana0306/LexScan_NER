@@ -23,6 +23,8 @@ services:
     environment:
       - API_HOST=0.0.0.0
       - API_PORT=8000
+      - API_RELOAD=0
+      - NER_SKIP_BOOTSTRAP=1
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -31,7 +33,7 @@ services:
       retries: 3
       start_period: 60s
 
-  # ── Gradio UI Frontend ───────────────────────────────────────
+  # ── LexScan UI (FastAPI + static frontend) ─────────────────────
   ui:
     build: .
     container_name: ner_ui
@@ -45,7 +47,10 @@ services:
     env_file:
       - .env
     environment:
-      - API_URL=http://api:8000       # connects to api service
+      - API_URL=http://api:8000
+      - APP_HOST=0.0.0.0
+      - APP_PORT=7860
+      - NER_SKIP_BOOTSTRAP=1
     depends_on:
       api:
         condition: service_healthy

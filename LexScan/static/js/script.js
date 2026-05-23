@@ -26,6 +26,40 @@ const domainReasoning = document.getElementById("domainReasoning");
 const aiInsight = document.getElementById("aiInsight");
 const insightsOutput = document.getElementById("insightsOutput");
 const processingTime = document.getElementById("processingTime");
+const workspaceTitle = document.getElementById("workspaceTitle");
+const workspaceCollection = document.getElementById("workspaceCollection");
+const workspaceDomain = document.getElementById("workspaceDomain");
+const workspaceSaveMode = document.getElementById("workspaceSaveMode");
+const workspaceText = document.getElementById("workspaceText");
+const workspaceAnalyzeBtn = document.getElementById("workspaceAnalyzeBtn");
+const workspaceUseCurrentBtn = document.getElementById("workspaceUseCurrentBtn");
+const workspaceStatus = document.getElementById("workspaceStatus");
+const workspaceSubtype = document.getElementById("workspaceSubtype");
+const workspaceSummary = document.getElementById("workspaceSummary");
+const workspaceFlags = document.getElementById("workspaceFlags");
+const workspaceTimeline = document.getElementById("workspaceTimeline");
+const workspaceActions = document.getElementById("workspaceActions");
+const workspaceRelations = document.getElementById("workspaceRelations");
+const workspaceEntities = document.getElementById("workspaceEntities");
+const workspaceQuestion = document.getElementById("workspaceQuestion");
+const workspaceQuestionBtn = document.getElementById("workspaceQuestionBtn");
+const workspaceAnswer = document.getElementById("workspaceAnswer");
+const workspaceCompareA = document.getElementById("workspaceCompareA");
+const workspaceCompareB = document.getElementById("workspaceCompareB");
+const workspaceCompareBtn = document.getElementById("workspaceCompareBtn");
+const workspaceCompareOutput = document.getElementById("workspaceCompareOutput");
+const workspaceSearchInput = document.getElementById("workspaceSearchInput");
+const workspaceSearchBtn = document.getElementById("workspaceSearchBtn");
+const workspaceSearchResults = document.getElementById("workspaceSearchResults");
+const workspaceRecentDocs = document.getElementById("workspaceRecentDocs");
+const compareTabDomainA = document.getElementById("compareTabDomainA");
+const compareTabDomainB = document.getElementById("compareTabDomainB");
+const compareTabTextA = document.getElementById("compareTabTextA");
+const compareTabTextB = document.getElementById("compareTabTextB");
+const compareTabRunBtn = document.getElementById("compareTabRunBtn");
+const compareTabUseWorkspaceBtn = document.getElementById("compareTabUseWorkspaceBtn");
+const compareTabStatus = document.getElementById("compareTabStatus");
+const compareTabOutput = document.getElementById("compareTabOutput");
 
 const assistantContext = document.getElementById("assistantContext");
 const assistantQuestion = document.getElementById("assistantQuestion");
@@ -64,6 +98,7 @@ let latestMulti = null;
 let latestReport = null;
 let latestTranslatedText = "";
 let analyzeProgressTimer = null;
+let latestWorkspace = null;
 
 const esc = (value) =>
     String(value)
@@ -219,6 +254,17 @@ function splitBatchInput(text) {
         .filter(Boolean);
 }
 
+function renderStackCards(container, items, formatter) {
+    if (!container) return;
+    if (!items || !items.length) {
+        container.innerHTML = "<span class='muted'>Nothing to show yet.</span>";
+        container.classList.remove("muted");
+        return;
+    }
+    container.innerHTML = items.map((item) => formatter(item)).join("");
+    container.classList.remove("muted");
+}
+
 async function loadLanguages() {
     try {
         const response = await fetch("/api/languages");
@@ -231,6 +277,272 @@ async function loadLanguages() {
         multiLanguageSelect.value = "Arabic";
     } catch (_error) {
         // keep UI usable even if language API fails
+    }
+}
+
+function renderWorkspaceAnalysis(payload) {
+    const analysis = payload?.analysis || {};
+    const entities = analysis.normalized_entities || analysis.entities || [];
+    const documentId = payload?.document_id || null;
+    latestWorkspace = { ...payload, analysis };
+    workspaceStatus.textContent = documentId
+        ? `Smart analysis complete. Saved document ${documentId.slice(0, 8)} in ${payload.collection_name}.`
+        : "Smart analysis complete. This run was not saved.";
+    workspaceSubtype.innerHTML = `
+        <span class="chip">Subtype: ${esc(String(analysis.subtype || "unknown").replace(/_/g, " "))}</span>
+        <span class="chip">Domain: ${esc(String(analysis.domain || "unknown").toUpperCase())}</span>
+        <span class="chip">Entities: ${entities.length}</span>
+        <span class="chip">Saved: ${documentId ? "Yes" : "No"}</span>
+    `;
+    const plain = analysis.plain_language || {};
+    workspaceSummary.innerHTML = `
+        <p><strong>${esc(plain.title || "Plain-language explanation")}</strong></p>
+        <p>${esc(plain.short_summary || "No summary available.")}</p>
+        <ul>${(plain.bullet_points || []).map((item) => `<li>${esc(item)}</li>`).join("")}</ul>
+    `;
+    renderStackCards(workspaceFlags, analysis.red_flags || [], (item) => `
+        <div class="stack-card">
+            <strong>${esc(item.title || "Flag")}</strong>
+            <div>${esc(item.guidance || "")}</div>
+            <div class="stack-meta">Evidence: ${esc(item.evidence || "--")} | Severity: ${esc(item.severity || "medium")}</div>
+        </div>
+    `);
+    renderStackCards(workspaceActions, analysis.action_items || [], (item) => `
+        <div class="stack-card">
+            <strong>${esc(item.title || "Action item")}</strong>
+            <div>${esc(item.action || "")}</div>
+            <div class="stack-meta">Priority: ${esc(item.priority || "medium")}</div>
+        </div>
+    `);
+    renderStackCards(workspaceTimeline, analysis.timeline || [], (item) => `
+        <div class="stack-card">
+            <strong>${esc(item.date || "--")}</strong>
+            <div>${esc(item.event || "")}</div>
+        </div>
+    `);
+    renderStackCards(workspaceRelations, analysis.relations || [], (item) => `
+        <div class="stack-card">
+            <strong>${esc(item.relation || "relation")}</strong>
+            <div>${esc((item.entities || []).join(" -> "))}</div>
+            <div class="stack-meta">${esc(item.evidence || "")}</div>
+        </div>
+    `);
+    workspaceEntities.innerHTML = entities.length
+        ? `<div class="entity-pill-grid">${entities.slice(0, 24).map((item) => `<span class="entity-pill">${esc(item.label || "UNK")}: ${esc(item.canonical_text || item.text || "")}</span>`).join("")}</div>`
+        : "<span class='muted'>No normalized entities available.</span>";
+    workspaceEntities.classList.remove("muted");
+}
+
+async function refreshWorkspaceDocuments() {
+    if (!workspaceRecentDocs) return;
+    try {
+        const response = await fetch("/api/workspace/documents");
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || data.error || "Could not load workspace documents");
+        renderStackCards(workspaceRecentDocs, data.documents || [], (item) => `
+            <div class="stack-card" data-document-id="${esc(item.document_id || "")}">
+                <strong>${esc(item.title || "Untitled")}</strong>
+                <div>${esc(item.collection_name || "Default")} | ${esc(item.subtype || "unknown")}</div>
+                <div class="stack-meta">${esc(String(item.domain || "general").toUpperCase())}</div>
+            </div>
+        `);
+        workspaceRecentDocs.querySelectorAll("[data-document-id]").forEach((node) => {
+            node.style.cursor = "pointer";
+            node.addEventListener("click", () => loadWorkspaceDocument(node.getAttribute("data-document-id")));
+        });
+    } catch (error) {
+        workspaceRecentDocs.innerHTML = `<span class='muted'>${esc(error.message)}</span>`;
+    }
+}
+
+async function loadWorkspaceDocument(documentId) {
+    if (!documentId) return;
+    try {
+        const response = await fetch(`/api/workspace/documents/${encodeURIComponent(documentId)}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || data.error || "Could not load document");
+        workspaceTitle.value = data.title || "";
+        workspaceCollection.value = data.collection_name || "";
+        workspaceText.value = data.text || "";
+        workspaceDomain.value = data.domain || "auto";
+        renderWorkspaceAnalysis({
+            title: data.title,
+            collection_name: data.collection_name,
+            document_id: data.document_id,
+            analysis: data.analysis,
+        });
+        workspaceStatus.textContent = `Loaded saved document ${documentId.slice(0, 8)}.`;
+        setActiveTab("tab-smart");
+    } catch (error) {
+        workspaceStatus.textContent = esc(error.message);
+    }
+}
+
+async function runWorkspaceAnalysis() {
+    const text = workspaceText.value.trim();
+    if (!text) {
+        workspaceStatus.textContent = "Please paste a document into the smart workspace first.";
+        return;
+    }
+    setButtonLoading(workspaceAnalyzeBtn, "Analyzing...", true);
+    workspaceStatus.textContent = "Running smart document intelligence...";
+    try {
+        const response = await fetch("/api/workspace/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                title: workspaceTitle.value,
+                collection_name: workspaceCollection.value,
+                text,
+                domain: workspaceDomain.value,
+                save_document: workspaceSaveMode.value === "save",
+            }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || data.error || "Workspace analysis failed");
+        renderWorkspaceAnalysis(data);
+        await refreshWorkspaceDocuments();
+    } catch (error) {
+        workspaceStatus.textContent = esc(error.message);
+    } finally {
+        setButtonLoading(workspaceAnalyzeBtn, "Analyzing...", false);
+    }
+}
+
+async function runWorkspaceQuestion() {
+    const text = (latestWorkspace?.analysis?.text || workspaceText.value || "").trim();
+    const question = workspaceQuestion.value.trim();
+    if (!text || !question) {
+        workspaceAnswer.textContent = "Please analyze a document and enter a question.";
+        workspaceAnswer.classList.remove("muted");
+        return;
+    }
+    setButtonLoading(workspaceQuestionBtn, "Answering...", true);
+    try {
+        const response = await fetch("/api/workspace/question", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text, question }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || data.error || "Question answering failed");
+        workspaceAnswer.innerHTML = `
+            <p>${esc(data.answer || "")}</p>
+            <ul>${(data.citations || []).map((item) => `<li>${esc(item)}</li>`).join("")}</ul>
+        `;
+        workspaceAnswer.classList.remove("muted");
+    } catch (error) {
+        workspaceAnswer.textContent = esc(error.message);
+        workspaceAnswer.classList.remove("muted");
+    } finally {
+        setButtonLoading(workspaceQuestionBtn, "Answering...", false);
+    }
+}
+
+async function runWorkspaceCompare() {
+    const textA = workspaceCompareA.value.trim();
+    const textB = workspaceCompareB.value.trim();
+    if (!textA || !textB) {
+        workspaceCompareOutput.textContent = "Please provide both documents for comparison.";
+        workspaceCompareOutput.classList.remove("muted");
+        return;
+    }
+    setButtonLoading(workspaceCompareBtn, "Comparing...", true);
+    try {
+        const response = await fetch("/api/workspace/compare", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                text_a: textA,
+                text_b: textB,
+                domain_a: workspaceDomain.value,
+                domain_b: workspaceDomain.value,
+            }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || data.error || "Comparison failed");
+        const comparison = data.comparison || {};
+        workspaceCompareOutput.innerHTML = `
+            <ul>${(comparison.summary || []).map((item) => `<li>${esc(item)}</li>`).join("")}</ul>
+            <p><strong>Only in A:</strong> ${esc((comparison.only_in_a || []).join(", ") || "None")}</p>
+            <p><strong>Only in B:</strong> ${esc((comparison.only_in_b || []).join(", ") || "None")}</p>
+        `;
+        workspaceCompareOutput.classList.remove("muted");
+    } catch (error) {
+        workspaceCompareOutput.textContent = esc(error.message);
+        workspaceCompareOutput.classList.remove("muted");
+    } finally {
+        setButtonLoading(workspaceCompareBtn, "Comparing...", false);
+    }
+}
+
+async function runWorkspaceSearch() {
+    const query = workspaceSearchInput.value.trim();
+    if (!query) {
+        workspaceSearchResults.textContent = "Enter a search query first.";
+        workspaceSearchResults.classList.remove("muted");
+        return;
+    }
+    setButtonLoading(workspaceSearchBtn, "Searching...", true);
+    try {
+        const response = await fetch(`/api/workspace/search?query=${encodeURIComponent(query)}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || data.error || "Search failed");
+        renderStackCards(workspaceSearchResults, data.results || [], (item) => `
+            <div class="stack-card" data-document-id="${esc(item.document_id || "")}">
+                <strong>${esc(item.title || "Untitled")}</strong>
+                <div>${esc(item.preview || "")}</div>
+                <div class="stack-meta">${esc(item.collection_name || "Default")} | ${esc(String(item.domain || "general").toUpperCase())} | Entities: ${item.entity_count ?? 0}</div>
+            </div>
+        `);
+        workspaceSearchResults.querySelectorAll("[data-document-id]").forEach((node) => {
+            node.style.cursor = "pointer";
+            node.addEventListener("click", () => loadWorkspaceDocument(node.getAttribute("data-document-id")));
+        });
+    } catch (error) {
+        workspaceSearchResults.textContent = esc(error.message);
+        workspaceSearchResults.classList.remove("muted");
+    } finally {
+        setButtonLoading(workspaceSearchBtn, "Searching...", false);
+    }
+}
+
+async function runCompareTab() {
+    const textA = compareTabTextA.value.trim();
+    const textB = compareTabTextB.value.trim();
+    if (!textA || !textB) {
+        compareTabStatus.textContent = "Please provide both documents first.";
+        return;
+    }
+    setButtonLoading(compareTabRunBtn, "Comparing...", true);
+    compareTabStatus.textContent = "Comparing documents...";
+    try {
+        const response = await fetch("/api/workspace/compare", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                text_a: textA,
+                text_b: textB,
+                domain_a: compareTabDomainA.value,
+                domain_b: compareTabDomainB.value,
+            }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || data.error || "Comparison failed");
+        const comparison = data.comparison || {};
+        compareTabStatus.textContent = "Comparison complete.";
+        compareTabOutput.innerHTML = `
+            <ul>${(comparison.summary || []).map((item) => `<li>${esc(item)}</li>`).join("")}</ul>
+            <p><strong>Only in A:</strong> ${esc((comparison.only_in_a || []).join(", ") || "None")}</p>
+            <p><strong>Only in B:</strong> ${esc((comparison.only_in_b || []).join(", ") || "None")}</p>
+        `;
+        compareTabOutput.classList.remove("muted");
+    } catch (error) {
+        compareTabStatus.textContent = esc(error.message);
+        compareTabOutput.textContent = esc(error.message);
+        compareTabOutput.classList.remove("muted");
+    } finally {
+        setButtonLoading(compareTabRunBtn, "Comparing...", false);
     }
 }
 
@@ -681,9 +993,24 @@ async function exportMultiPDF() {
 bindUploadEvents();
 bindNavigation();
 loadLanguages();
+refreshWorkspaceDocuments();
 setActiveTab("tab-document");
 
 analyzeBtn.addEventListener("click", runDocumentAnalysis);
+workspaceAnalyzeBtn?.addEventListener("click", runWorkspaceAnalysis);
+workspaceQuestionBtn?.addEventListener("click", runWorkspaceQuestion);
+workspaceCompareBtn?.addEventListener("click", runWorkspaceCompare);
+workspaceSearchBtn?.addEventListener("click", runWorkspaceSearch);
+workspaceUseCurrentBtn?.addEventListener("click", () => {
+    workspaceText.value = textInput.value || assistantContext.value || "";
+    if (!workspaceTitle.value) workspaceTitle.value = "Imported from Document Analysis";
+    if (!workspaceCollection.value) workspaceCollection.value = "Imported Workspace";
+});
+compareTabRunBtn?.addEventListener("click", runCompareTab);
+compareTabUseWorkspaceBtn?.addEventListener("click", () => {
+    compareTabTextA.value = workspaceText.value || textInput.value || "";
+    compareTabTextB.value = multiSourceText.value || "";
+});
 assistantAskBtn.addEventListener("click", runAssistant);
 batchRunBtn.addEventListener("click", runBatch);
 translateBtn.addEventListener("click", runTranslateOnly);

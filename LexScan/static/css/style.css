@@ -262,6 +262,17 @@ select {
     transition: all 0.2s ease;
 }
 
+input[type="text"] {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--section);
+    font: inherit;
+    color: var(--text);
+    padding: 10px 12px;
+    transition: all 0.2s ease;
+}
+
 textarea {
     min-height: 180px;
     resize: vertical;
@@ -270,12 +281,18 @@ textarea {
 #assistantContext,
 #assistantQuestion,
 #batchInput,
-#multiSourceText {
+#multiSourceText,
+#workspaceQuestion,
+#workspaceCompareA,
+#workspaceCompareB,
+#compareTabTextA,
+#compareTabTextB {
     min-height: 140px;
 }
 
 textarea:focus,
-select:focus {
+select:focus,
+input[type="text"]:focus {
     outline: none;
     border-color: var(--blue);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
@@ -492,6 +509,61 @@ input[readonly] {
     gap: 10px;
 }
 
+.smart-workspace {
+    min-height: calc(100vh - 210px);
+}
+
+.smart-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.search-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+}
+
+.stack-list {
+    display: grid;
+    gap: 10px;
+}
+
+.stack-card {
+    border: 1px solid var(--border);
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    border-radius: 12px;
+    padding: 12px 13px;
+}
+
+.stack-card strong {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--blue);
+}
+
+.stack-meta {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 0.84rem;
+}
+
+.entity-pill-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.entity-pill {
+    padding: 8px 10px;
+    border-radius: 999px;
+    background: #eef4ff;
+    color: var(--blue-dark);
+    font-size: 0.85rem;
+    border: 1px solid rgba(37, 99, 235, 0.14);
+}
+
 .right-panel {
     background: linear-gradient(180deg, #ffffff 0%, #fafcff 100%);
 }
@@ -688,8 +760,10 @@ th {
     .selectors,
     .selectors.three,
     .button-row,
+    .smart-grid,
     .insights-grid,
-    .about-grid {
+    .about-grid,
+    .search-row {
         grid-template-columns: 1fr;
     }
 

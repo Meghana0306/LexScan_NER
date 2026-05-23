@@ -26,6 +26,8 @@ data/raw/
 data/processed/
 data/splits/
 data/annotations/
+data/*.sqlite3
+data/*.db
 *.csv
 *.json
 *.parquet
