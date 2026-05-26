@@ -1,60 +1,54 @@
-# ══════════════════════════════════════════════════════════════
-#  docker-compose.yml — Run everything with one command
-#  Usage: docker-compose up
-# ══════════════════════════════════════════════════════════════
-
 services:
-
-  # ── FastAPI Backend ──────────────────────────────────────────
   api:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: api
+    image: lexscan-ner-api:local
     container_name: ner_api
-    command: python run_api.py
     ports:
       - "8000:8000"
     volumes:
-      - ./models:/app/models          # your trained models
-      - ./data:/app/data              # your data
-      - ./logs:/app/logs              # logs
-    env_file:
-      - .env
+      - ./models:/app/models:ro
+      - ./data:/app/data
+      - ./logs:/app/logs
     environment:
-      - API_HOST=0.0.0.0
-      - API_PORT=8000
-      - API_RELOAD=0
-      - NER_SKIP_BOOTSTRAP=1
+      API_HOST: "0.0.0.0"
+      API_PORT: "8000"
+      NER_SKIP_BOOTSTRAP: "1"
+      PYDANTIC_V1_COMPAT: "1"
+      PYTHONPATH: "/app"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 60s
+      retries: 5
+      start_period: 120s
 
-  # ── LexScan UI (FastAPI + static frontend) ─────────────────────
   ui:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: ui
+    image: lexscan-ner-ui:local
     container_name: ner_ui
-    command: python app.py
     ports:
       - "7860:7860"
     volumes:
-      - ./models:/app/models
+      - ./models:/app/models:ro
       - ./data:/app/data
       - ./logs:/app/logs
-    env_file:
-      - .env
     environment:
-      - API_URL=http://api:8000
-      - APP_HOST=0.0.0.0
-      - APP_PORT=7860
-      - NER_SKIP_BOOTSTRAP=1
+      API_URL: "http://api:8000"
+      APP_HOST: "0.0.0.0"
+      APP_PORT: "7860"
+      GRADIO_SERVER_NAME: "0.0.0.0"
+      GRADIO_SERVER_PORT: "7860"
+      NER_SKIP_BOOTSTRAP: "1"
+      PYDANTIC_V1_COMPAT: "1"
+      PYTHONPATH: "/app"
     depends_on:
       api:
         condition: service_healthy
-    restart: unless-stopped
-
-volumes:
-  models:
-  data:
-  logs:
+    restart: unless-stopped  

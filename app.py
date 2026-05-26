@@ -44,12 +44,15 @@ def _bootstrap_to_project_venv():
 
 _bootstrap_to_project_venv()
 
-from fastapi import FastAPI, UploadFile, File, Body
+from fastapi import FastAPI, UploadFile, File, Body, Request
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 import uvicorn
+import logging
 
 import ui as ui_logic
+
+logger = logging.getLogger(__name__)
 
 
 app = FastAPI(title="LexScan Web")

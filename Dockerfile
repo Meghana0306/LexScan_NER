@@ -1,42 +1,53 @@
-# ══════════════════════════════════════════════════════════════
-#  Dockerfile — Multi-Domain NER System
-#  Builds the complete app into a single container
-# ══════════════════════════════════════════════════════════════
+# ================================================
+# LexScan NER - Multi-stage Dockerfile
+# ================================================
 
-FROM python:3.11-slim
+FROM python:3.11-slim AS base
 
-# Set working directory
 WORKDIR /app
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first (for Docker cache)
-COPY requirements.txt .
-
-# Install Python dependencies using CPU-only index for PyTorch to speed up download/build
+# Copy and install Python dependencies
+COPY requirements-docker.txt requirements.txt ./
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --default-timeout=1000 --no-cache-dir -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+    pip install --no-cache-dir -r requirements-docker.txt \
+    --extra-index-url https://download.pytorch.org/whl/cpu && \
+    python -m spacy download en_core_web_sm --no-deps || true
 
-# Download spaCy model
-RUN python -m spacy download en_core_web_sm
-
-# Copy all project files
+# Copy application code
 COPY . .
 
 # Create necessary directories
-RUN mkdir -p logs outputs data/processed models
+RUN mkdir -p logs outputs data models
 
-# Expose ports
-EXPOSE 8000 7860
+# Environment variables
+ENV PYTHONUNBUFFERED=1 \
+    NER_SKIP_BOOTSTRAP=1 \
+    API_HOST=0.0.0.0 \
+    API_PORT=8000 \
+    APP_HOST=0.0.0.0 \
+    APP_PORT=7860
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+# ==================== API Service ====================
+FROM base AS api
+EXPOSE 8000
 
-# Default command (overridden by docker-compose)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=5 \
+    CMD curl -fsS http://127.0.0.1:8000/health || exit 1
+
 CMD ["python", "run_api.py"]
+
+# ==================== UI Service ====================
+FROM base AS ui
+EXPOSE 7860
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=5 \
+    CMD curl -fsS http://127.0.0.1:7860/ || exit 1
+
+CMD ["python", "app.py"]

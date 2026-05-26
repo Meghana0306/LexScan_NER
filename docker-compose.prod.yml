@@ -1,41 +1,37 @@
-# ══════════════════════════════════════════════════════════════
-#  docker-compose.prod.yml — Production deployment services
-#  Usage: REGISTRY=docker.io IMAGE_NAME=lexscan-ner-api IMAGE_TAG=latest docker compose -f docker-compose.prod.yml up -d
-# ══════════════════════════════════════════════════════════════
+#version: "3.9"
 
-version: '3.8'
+# Production — Pull pre-built images from GHCR
+# Usage: REGISTRY=ghcr.io IMAGE_OWNER=yourusername IMAGE_TAG=latest docker compose -f docker-compose.prod.yml up -d
 
 services:
-
-  # ── FastAPI Backend API ──────────────────────────────────────
   api:
-    image: ${REGISTRY:-docker.io}/${IMAGE_NAME:-lexscan-ner-api}:${IMAGE_TAG:-latest}
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_OWNER:-Meghana0306}/lexscan-ner-api:${IMAGE_TAG:-latest}
     container_name: ner_api_prod
-    command: python run_api.py
     ports:
       - "8000:8000"
     volumes:
-      - models_prod:/app/models          # named volume for models
-      - data_prod:/app/data              # named volume for data
-      - logs_prod:/app/logs              # named volume for logs
+      - models_prod:/app/models
+      - data_prod:/app/data
+      - logs_prod:/app/logs
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
-      - API_HOST=0.0.0.0
-      - API_PORT=8000
+      API_HOST: "0.0.0.0"
+      API_PORT: "8000"
+      API_RELOAD: "0"
+      NER_SKIP_BOOTSTRAP: "1"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 60s
+      retries: 5
+      start_period: 120s
 
-  # ── Gradio UI Frontend ───────────────────────────────────────
   ui:
-    image: ${REGISTRY:-docker.io}/${IMAGE_NAME:-lexscan-ner-api}:${IMAGE_TAG:-latest}
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_OWNER:-Meghana0306}/lexscan-ner-ui:${IMAGE_TAG:-latest}
     container_name: ner_ui_prod
-    command: python app.py
     ports:
       - "7860:7860"
     volumes:
@@ -43,16 +39,25 @@ services:
       - data_prod:/app/data
       - logs_prod:/app/logs
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
-      - API_URL=http://api:8000       # links directly to the API container inside Docker network
-      - APP_HOST=0.0.0.0
+      API_URL: "http://api:8000"
+      APP_HOST: "0.0.0.0"
+      APP_PORT: "7860"
+      NER_SKIP_BOOTSTRAP: "1"
     depends_on:
       api:
         condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:7860/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
 
 volumes:
   models_prod:
   data_prod:
-  logs_prod:
+  logs_prod: 

@@ -1,8 +1,3 @@
-# ══════════════════════════════════════════════════════════════
-#  .dockerignore — Files NOT copied into Docker image
-#  Keeps image small and clean
-# ══════════════════════════════════════════════════════════════
-
 # Python
 __pycache__/
 *.pyc
@@ -13,7 +8,7 @@ __pycache__/
 dist/
 build/
 
-# Virtual environment (don't copy — Docker installs its own)
+# Virtual environments
 venv/
 env/
 .venv/
@@ -22,41 +17,38 @@ env/
 .git/
 .gitignore
 
-# Secrets (use .env file instead)
+# Secrets
 .env
 *.key
 *.pem
 
-# Large data files (mounted as volumes instead)
-data/raw/
-data/processed/
+# Large files & models (use volumes)
+data/
+models/**/*.safetensors
+models/**/*.bin
+models/**/*.pt
 *.zip
 *.tar.gz
 
-# Logs
+# Logs & outputs
 logs/
-*.log
-
-# MLflow runs
+outputs/
 mlruns/
 
-# Jupyter
-.ipynb_checkpoints/
-*.ipynb
-
-# IDE
+# IDE & Editors
 .vscode/
 .idea/
 *.swp
 .DS_Store
 
-# Test cache
+# Testing & Docs
 .pytest_cache/
 .coverage
 htmlcov/
+tests/
+docs/
+.github/
+Jenkinsfile
 
 # Backups
-backups/
-
-# Node (if any)
-node_modules/
+backups/  

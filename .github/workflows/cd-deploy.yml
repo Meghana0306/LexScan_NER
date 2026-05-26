@@ -1,0 +1,59 @@
+# Pipeline 3 — CD: verify images and smoke-test the full stack
+name: CD Deploy
+
+on:
+  workflow_run:
+    workflows: [Docker Build]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: cd-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke-deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull images
+        env:
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          docker pull "ghcr.io/${OWNER}/lexscan-ner-api:latest"
+          docker pull "ghcr.io/${OWNER}/lexscan-ner-ui:latest"
+
+      - name: Prepare env
+        run: cp .env.example .env
+
+      - name: Start production compose stack
+        env:
+          REGISTRY: ghcr.io
+          IMAGE_OWNER: ${{ github.repository_owner }}
+          IMAGE_TAG: latest
+        run: |
+          docker compose -f docker-compose.prod.yml up -d
+          for i in $(seq 1 36); do
+            if curl -fsS http://127.0.0.1:8000/health; then exit 0; fi
+            sleep 10
+          done
+          echo "API health check failed"
+          docker compose -f docker-compose.prod.yml logs
+          exit 1
+
+      - name: UI smoke check
+        run: curl -fsS http://127.0.0.1:7860/ -o /dev/null
+
+      - name: Tear down
+        if: always()
+        run: docker compose -f docker-compose.prod.yml down -v
