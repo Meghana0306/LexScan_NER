@@ -1,0 +1,3 @@
+models/general_best_model/model.safetensors filter=lfs diff=lfs merge=lfs -text
+models/legal_best_model/model.safetensors filter=lfs diff=lfs merge=lfs -text
+models/medical_best_model/model.safetensors filter=lfs diff=lfs merge=lfs -text

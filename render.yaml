@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: lexscan
+    runtime: python
+    plan: free
+    buildCommand: pip install --upgrade pip && pip install -r requirements-docker.txt --extra-index-url https://download.pytorch.org/whl/cpu && python -m spacy download en_core_web_sm --no-deps || true
+    startCommand: python app.py
+    healthCheckPath: /
+    envVars:
+      - key: APP_HOST
+        value: 0.0.0.0
+      - key: NER_SKIP_BOOTSTRAP
+        value: "1"
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false

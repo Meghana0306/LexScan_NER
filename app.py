@@ -500,7 +500,7 @@ async def multilang_report_pdf(payload: dict = Body(...)):
 
 def main():
     host = os.getenv("APP_HOST", "127.0.0.1")
-    port = int(os.getenv("APP_PORT", "7860"))
+    port = int(os.getenv("PORT") or os.getenv("APP_PORT", "7860"))
     uvicorn.run(app, host=host, port=port, log_level="info")
 
 
@@ -511,14 +511,11 @@ def main():
 import uuid
 from datetime import datetime
 
-# Try to import workspace services, if they don't exist, create them
+# Try to initialize workspace storage without changing the main backend flow.
 try:
-    from services.smart_workspace import analyze_workspace, compare_documents
-    from data.workspace_store import WorkspaceStore
-    workspace_store = WorkspaceStore()
-except:
-    # Fallback if files don't exist yet
-    print("⚠️ Smart Workspace files not found - creating stubs...")
+    from services.workspace_store import workspace_store
+except Exception:
+    print("Smart Workspace storage not available; continuing without it.")
     workspace_store = None
 
 

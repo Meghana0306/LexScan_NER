@@ -38,6 +38,14 @@ python app.py
 
 Open: `http://localhost:5000`
 
+## Deployment
+
+For a public shareable link, deploy the app as one web service.
+
+- Render guide: [DEPLOY_RENDER.md](DEPLOY_RENDER.md)
+- Main app entry: `python app.py`
+- Frontend and backend are already served together by `app.py`
+
 ## 📊 Tech Stack
 
 - **Backend:** Python, FastAPI

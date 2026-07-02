@@ -42,6 +42,9 @@ models/legalbert/*.pt
 models/bilstm_crf/*.pt
 models/ensemble/*.pt
 *.safetensors
+!models/general_best_model/model.safetensors
+!models/legal_best_model/model.safetensors
+!models/medical_best_model/model.safetensors
 
 # ── MLflow ──
 mlruns/
