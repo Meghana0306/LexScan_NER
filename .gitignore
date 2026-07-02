@@ -45,6 +45,12 @@ models/ensemble/*.pt
 !models/general_best_model/model.safetensors
 !models/legal_best_model/model.safetensors
 !models/medical_best_model/model.safetensors
+!models/general_best_model/*.json
+!models/general_best_model/*.txt
+!models/legal_best_model/*.json
+!models/legal_best_model/*.txt
+!models/medical_best_model/*.json
+!models/medical_best_model/*.txt
 
 # ── MLflow ──
 mlruns/
