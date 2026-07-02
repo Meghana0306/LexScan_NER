@@ -3,7 +3,7 @@ services:
     name: lexscan
     runtime: python
     plan: free
-    buildCommand: pip install --upgrade pip && pip install -r requirements-docker.txt --extra-index-url https://download.pytorch.org/whl/cpu && python -m spacy download en_core_web_sm --no-deps || true
+    buildCommand: pip install --upgrade pip && pip install -r requirements-docker.txt --extra-index-url https://download.pytorch.org/whl/cpu && (python -m spacy download en_core_web_sm --no-deps || true)
     startCommand: python app.py
     healthCheckPath: /
     envVars:

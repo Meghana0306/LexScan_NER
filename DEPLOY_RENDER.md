@@ -13,6 +13,7 @@ You do not need a separate frontend deployment for the current app.
 1. Push the repo to GitHub.
 2. Make sure these files are committed:
    - `app.py`
+   - `.python-version`
    - `render.yaml`
    - `.gitattributes`
    - the `LexScan/` folder
@@ -51,6 +52,7 @@ git push origin main
 ## Render Values
 
 The repo already contains the main deployment settings in `render.yaml`.
+It also includes `.python-version` so Render uses Python 3.11 instead of an unsupported newer version.
 
 Fill these secrets in Render when asked:
 
