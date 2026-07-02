@@ -11,6 +11,14 @@ services:
         value: 0.0.0.0
       - key: NER_SKIP_BOOTSTRAP
         value: "1"
+      - key: NER_UNLOAD_AFTER_PREDICT
+        value: "1"
+      - key: TORCH_NUM_THREADS
+        value: "1"
+      - key: OMP_NUM_THREADS
+        value: "1"
+      - key: TOKENIZERS_PARALLELISM
+        value: "false"
       - key: PYTHONUNBUFFERED
         value: "1"
       - key: GROQ_API_KEY

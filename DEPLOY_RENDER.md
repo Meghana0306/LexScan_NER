@@ -90,11 +90,21 @@ Add these environment variables:
 
 - `APP_HOST` = `0.0.0.0`
 - `NER_SKIP_BOOTSTRAP` = `1`
+- `NER_UNLOAD_AFTER_PREDICT` = `1`
+- `TORCH_NUM_THREADS` = `1`
+- `OMP_NUM_THREADS` = `1`
+- `TOKENIZERS_PARALLELISM` = `false`
 - `PYTHONUNBUFFERED` = `1`
 - `GROQ_API_KEY` = your real Groq key
 - `GEMINI_API_KEY` = your real Gemini key if needed
 
 Do not set `APP_PORT` on Render unless you have a special reason. The app now reads Render's `PORT` automatically.
+
+## If Render Shows 502 After Going Live
+
+The first deploy can show "No open ports detected" while Python is still starting; that is OK if it later says the service is live.
+
+If the site works briefly and then changes to `502 Bad Gateway`, open the Render logs and look for `Out of memory`, `Killed`, or a worker restart after `/api/document/analyze`. The app uses large NER model files, so the free Render instance may still be too small for medical/legal model inference. The current config keeps only one model in memory and unloads it after each prediction, but a paid instance may be required if Render still kills the process during analysis.
 
 ## Final Link
 

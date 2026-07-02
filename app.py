@@ -208,6 +208,11 @@ async def index():
     return HTMLResponse(content=html)
 
 
+@app.head("/")
+async def index_head():
+    return Response(status_code=200)
+
+
 @app.get("/api/languages")
 async def languages():
     return {"languages": ui_logic.SUPPORTED_LANGUAGES}

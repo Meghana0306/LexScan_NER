@@ -3,14 +3,24 @@ NERPredictor — loads all 3 models and runs inference
 """
 
 import logging
+import os
 import re
+import gc
 from pathlib import Path
 from typing import Dict, List, Optional
+
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
 import torch
 from transformers import AutoTokenizer, AutoModelForTokenClassification
 
 logger = logging.getLogger(__name__)
+
+try:
+    torch.set_num_threads(int(os.getenv("TORCH_NUM_THREADS", "1")))
+except Exception:
+    pass
 
 # ── Model paths ────────────────────────────────────────────────────────────
 BASE_DIR   = Path(__file__).resolve().parent.parent.parent
@@ -112,7 +122,7 @@ class NERPredictor:
             self.tokenizers[domain] = AutoTokenizer.from_pretrained(
                 str(path), local_files_only=True)
             self.models[domain] = AutoModelForTokenClassification.from_pretrained(
-                str(path), local_files_only=True).to(self.device)
+                str(path), local_files_only=True, low_cpu_mem_usage=True).to(self.device)
             self.models[domain].eval()
             logger.info(f"  ✅ {domain} model loaded")
             return True
@@ -125,8 +135,26 @@ class NERPredictor:
             self.load_model(domain)
         logger.info(f"Loaded models: {list(self.models.keys())}")
 
+    def unload_all_models(self) -> None:
+        self.models.clear()
+        self.tokenizers.clear()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        gc.collect()
+
+    def ensure_model(self, domain: str) -> bool:
+        if domain in self.models:
+            return True
+        # Keep memory usage low on small hosts like Render free instances.
+        self.unload_all_models()
+        return self.load_model(domain)
+
     def get_loaded_models(self) -> List[str]:
         return list(self.models.keys())
+
+    def should_unload_after_predict(self) -> bool:
+        value = os.getenv("NER_UNLOAD_AFTER_PREDICT", "0").strip().lower()
+        return value in {"1", "true", "yes", "on"}
 
     # ── Domain detection ───────────────────────────────────────────────────
     def detect_domain(self, text: str) -> str:
@@ -205,7 +233,7 @@ class NERPredictor:
 
     # ── Inference ──────────────────────────────────────────────────────────
     def predict(self, text: str, domain: str) -> List[Dict]:
-        if domain not in self.models:
+        if not self.ensure_model(domain):
             available = list(self.models.keys())
             raise ValueError(
                 f"Domain '{domain}' not loaded. Available: {available}")
@@ -286,5 +314,9 @@ class NERPredictor:
                 i += 1
 
         if domain == "medical":
-            return self._apply_medical_postprocessing(text, entities)
+            entities = self._apply_medical_postprocessing(text, entities)
+
+        if self.should_unload_after_predict():
+            self.unload_all_models()
+
         return entities

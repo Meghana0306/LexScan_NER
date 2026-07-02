@@ -763,7 +763,6 @@ def get_predictor() -> NERPredictor:
     global _PREDICTOR
     if _PREDICTOR is None:
         predictor = NERPredictor()
-        predictor.load_all_models()
         _PREDICTOR = predictor
     return _PREDICTOR
 
